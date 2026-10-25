@@ -1,0 +1,30 @@
+name: Build APK
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+      - name: Build debug APK
+        run: |
+          ZIP=$(ls *.zip | sort -V | tail -1)
+          mkdir -p /tmp/proj
+          unzip -q "$ZIP" -d /tmp/proj
+          DIR=$(dirname "$(find /tmp/proj -name settings.gradle.kts | head -1)")
+          cd "$DIR"
+          gradle assembleDebug --no-daemon
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          cp app/build/outputs/apk/debug/*.apk "$GITHUB_WORKSPACE/out/"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SMS-Controller-APK
+          path: out/*.apk
